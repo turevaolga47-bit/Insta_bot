@@ -20,7 +20,7 @@ def _subscribe_to_comments():
     if not ig_user_id or not token:
         log.warning("Skipping webhook subscription: IG_USER_ID or META_ACCESS_TOKEN missing")
         return
-    url = f"https://graph.instagram.com/v25.0/{ig_user_id}/subscribed_apps"
+    url = f"https://graph.facebook.com/v25.0/{ig_user_id}/subscribed_apps"
     try:
         r = _requests.post(url, params={"subscribed_fields": "comments", "access_token": token}, timeout=10)
         data = r.json()

@@ -26,7 +26,7 @@ class MetaDMService:
         self._access_token = os.environ.get("META_ACCESS_TOKEN", "")
         self._ig_user_id   = os.environ.get("IG_USER_ID", "")
         self._api_version  = "v25.0"
-        self._base_url     = f"https://graph.instagram.com/{self._api_version}"
+        self._base_url     = f"https://graph.facebook.com/{self._api_version}"
 
     def send_dm(self, igsid: str, username: str = "") -> bool:
         """Отправить DM пользователю по его IGSID."""
