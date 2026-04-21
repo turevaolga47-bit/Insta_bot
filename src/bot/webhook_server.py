@@ -1,7 +1,8 @@
 import os
+import requests
 from dotenv import load_dotenv
 load_dotenv()
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, jsonify
 from src.services.dm_service import MetaDMService
 from src.utils.logger import log
 
@@ -63,6 +64,44 @@ def _handle_comment(value: dict):
     if any(kw in text for kw in KEYWORDS):
         log.info(f"Trigger keyword found in comment by @{username}")
         dm_service.send_dm(igsid=user_id, username=username)
+
+
+@app.route("/setup")
+def setup_subscription():
+    """Подписывает IG аккаунт на webhook events. Вызвать один раз из браузера."""
+    token     = os.environ.get("META_ACCESS_TOKEN", "")
+    ig_user   = os.environ.get("IG_USER_ID", "")
+    api_ver   = "v25.0"
+
+    if not token or not ig_user:
+        return jsonify({"error": "META_ACCESS_TOKEN or IG_USER_ID not set"}), 500
+
+    url = f"https://graph.instagram.com/{api_ver}/{ig_user}/subscribed_apps"
+    r = requests.post(url, params={
+        "subscribed_fields": "comments",
+        "access_token": token,
+    }, timeout=10)
+
+    data = r.json()
+    log.info(f"subscribed_apps response [{r.status_code}]: {data}")
+    return jsonify({"status": r.status_code, "response": data})
+
+
+@app.route("/status")
+def status():
+    """Проверить текущую подписку IG аккаунта."""
+    token   = os.environ.get("META_ACCESS_TOKEN", "")
+    ig_user = os.environ.get("IG_USER_ID", "")
+    api_ver = "v25.0"
+
+    if not token or not ig_user:
+        return jsonify({"error": "META_ACCESS_TOKEN or IG_USER_ID not set"}), 500
+
+    url = f"https://graph.instagram.com/{api_ver}/{ig_user}/subscribed_apps"
+    r = requests.get(url, params={"access_token": token}, timeout=10)
+    data = r.json()
+    log.info(f"subscribed_apps GET [{r.status_code}]: {data}")
+    return jsonify({"status": r.status_code, "response": data})
 
 
 def run():
