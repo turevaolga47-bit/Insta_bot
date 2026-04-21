@@ -24,7 +24,7 @@ def verify_webhook():
     if mode == "subscribe" and token == VERIFY_TOKEN:
         log.info("Webhook verified successfully")
         return make_response(challenge, 200)
-    log.warning("Webhook verification failed")
+    log.warning(f"Webhook verification failed: mode={mode} token={token} expected={VERIFY_TOKEN}")
     return make_response("Forbidden", 403)
 
 
