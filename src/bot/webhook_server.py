@@ -32,8 +32,13 @@ def verify_webhook():
 def handle_webhook():
     """Обрабатывает входящие события от Meta."""
     body = request.get_json(silent=True)
-    if not body or body.get("object") != "instagram":
+    log.info(f"Webhook POST received: object={body.get('object') if body else 'NO_BODY'}, body={body}")
+    if not body:
+        log.warning("Rejected webhook: empty body")
         return make_response("Not Found", 404)
+    if body.get("object") not in ("instagram", "page"):
+        log.warning(f"Unknown object type: {body.get('object')}")
+        return make_response("EVENT_RECEIVED", 200)
 
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
