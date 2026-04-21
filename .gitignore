@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+data/accounts/session.json
+logs/
+*.log
+.venv/
+venv/
