@@ -1,4 +1,5 @@
 import os
+import requests as _requests
 from dotenv import load_dotenv
 load_dotenv()
 from flask import Flask, request, make_response
@@ -11,6 +12,26 @@ VERIFY_TOKEN = os.environ.get("WEBHOOK_VERIFY_TOKEN", "my_verify_token")
 KEYWORDS     = [kw.upper() for kw in os.environ.get("TRIGGER_KEYWORDS", "РЕТРИТ,ХОЧУ,INFO").split(",")]
 
 dm_service = MetaDMService()
+
+
+def _subscribe_to_comments():
+    ig_user_id = os.environ.get("IG_USER_ID", "")
+    token      = os.environ.get("META_ACCESS_TOKEN", "")
+    if not ig_user_id or not token:
+        log.warning("Skipping webhook subscription: IG_USER_ID or META_ACCESS_TOKEN missing")
+        return
+    url = f"https://graph.instagram.com/v25.0/{ig_user_id}/subscribed_apps"
+    try:
+        r = _requests.post(url, params={"subscribed_fields": "comments", "access_token": token}, timeout=10)
+        data = r.json()
+        if data.get("success"):
+            log.info("Subscribed to Instagram comment webhooks OK")
+        else:
+            log.warning(f"Webhook subscription response: {data}")
+    except Exception as e:
+        log.error(f"Webhook subscription error: {e}")
+
+_subscribe_to_comments()
 
 
 @app.route("/webhook", methods=["GET"])
