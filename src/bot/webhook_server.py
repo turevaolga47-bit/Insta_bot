@@ -107,6 +107,11 @@ def setup_subscription():
         else:
             log.warning(f"IGAAC exchange failed: {ex_data}")
 
+    me_base = "https://graph.instagram.com" if is_igaac else "https://graph.facebook.com"
+    me = requests.get(f"{me_base}/{api_ver}/me", params={"access_token": long_token, "fields": "id,username"}, timeout=10)
+    me_data = me.json()
+    log.info(f"Token belongs to: {me_data}")
+
     base = "https://graph.instagram.com" if is_igaac else "https://graph.facebook.com"
     url = f"{base}/{api_ver}/{ig_user}/subscribed_apps"
     r = requests.post(url, params={
@@ -117,8 +122,10 @@ def setup_subscription():
     data = r.json()
     log.info(f"subscribed_apps response [{r.status_code}]: {data}")
     return jsonify({
+        "token_user": me_data,
+        "configured_ig_user_id": ig_user,
         "subscribed": data,
-        "long_lived_token": long_token if app_secret else "APP_SECRET not set — token not exchanged",
+        "long_lived_token": long_token,
         "note": "Copy long_lived_token to Railway META_ACCESS_TOKEN — valid 60 days"
     })
 
