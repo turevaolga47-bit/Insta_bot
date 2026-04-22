@@ -76,7 +76,7 @@ def setup_subscription():
     if not token or not ig_user:
         return jsonify({"error": "META_ACCESS_TOKEN or IG_USER_ID not set"}), 500
 
-    url = f"https://graph.instagram.com/{api_ver}/{ig_user}/subscribed_apps"
+    url = f"https://graph.facebook.com/{api_ver}/{ig_user}/subscribed_apps"
     r = requests.post(url, params={
         "subscribed_fields": "comments",
         "access_token": token,
@@ -97,7 +97,7 @@ def status():
     if not token or not ig_user:
         return jsonify({"error": "META_ACCESS_TOKEN or IG_USER_ID not set"}), 500
 
-    url = f"https://graph.instagram.com/{api_ver}/{ig_user}/subscribed_apps"
+    url = f"https://graph.facebook.com/{api_ver}/{ig_user}/subscribed_apps"
     r = requests.get(url, params={"access_token": token}, timeout=10)
     data = r.json()
     log.info(f"subscribed_apps GET [{r.status_code}]: {data}")
