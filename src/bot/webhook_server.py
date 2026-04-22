@@ -78,8 +78,10 @@ def setup_subscription():
     if not token or not ig_user:
         return jsonify({"error": "META_ACCESS_TOKEN or IG_USER_ID not set"}), 500
 
-    long_token = token
-    if app_secret:
+    long_token = token.strip()
+    is_igaac = token.startswith("IGAA")
+
+    if app_secret and not is_igaac:
         ex = requests.get(f"https://graph.facebook.com/{api_ver}/oauth/access_token", params={
             "grant_type":        "fb_exchange_token",
             "client_id":         app_id,
@@ -89,13 +91,24 @@ def setup_subscription():
         ex_data = ex.json()
         if "access_token" in ex_data:
             long_token = ex_data["access_token"]
-            expires_in = ex_data.get("expires_in", "unknown")
-            log.info(f"Token exchanged for long-lived, expires_in={expires_in}s")
-            log.info(f"LONG_LIVED_TOKEN={long_token}")
+            log.info(f"Token exchanged for long-lived EAA")
         else:
             log.warning(f"Token exchange failed: {ex_data}")
+    elif app_secret and is_igaac:
+        ex = requests.get(f"https://graph.instagram.com/access_token", params={
+            "grant_type":    "ig_exchange_token",
+            "client_secret": app_secret,
+            "access_token":  token,
+        }, timeout=10)
+        ex_data = ex.json()
+        if "access_token" in ex_data:
+            long_token = ex_data["access_token"]
+            log.info(f"IGAAC token exchanged for long-lived")
+        else:
+            log.warning(f"IGAAC exchange failed: {ex_data}")
 
-    url = f"https://graph.facebook.com/{api_ver}/{ig_user}/subscribed_apps"
+    base = "https://graph.instagram.com" if is_igaac else "https://graph.facebook.com"
+    url = f"{base}/{api_ver}/{ig_user}/subscribed_apps"
     r = requests.post(url, params={
         "subscribed_fields": "comments",
         "access_token": long_token,
