@@ -68,23 +68,46 @@ def _handle_comment(value: dict):
 
 @app.route("/setup")
 def setup_subscription():
-    """Подписывает IG аккаунт на webhook events. Вызвать один раз из браузера."""
-    token     = os.environ.get("META_ACCESS_TOKEN", "")
-    ig_user   = os.environ.get("IG_USER_ID", "")
-    api_ver   = "v25.0"
+    """Обменивает токен на долгосрочный (60 дней) и подписывает аккаунт на webhook events."""
+    token      = os.environ.get("META_ACCESS_TOKEN", "")
+    ig_user    = os.environ.get("IG_USER_ID", "")
+    app_id     = os.environ.get("APP_ID", "960470996353710")
+    app_secret = os.environ.get("APP_SECRET", "")
+    api_ver    = "v25.0"
 
     if not token or not ig_user:
         return jsonify({"error": "META_ACCESS_TOKEN or IG_USER_ID not set"}), 500
 
+    long_token = token
+    if app_secret:
+        ex = requests.get(f"https://graph.facebook.com/{api_ver}/oauth/access_token", params={
+            "grant_type":        "fb_exchange_token",
+            "client_id":         app_id,
+            "client_secret":     app_secret,
+            "fb_exchange_token": token,
+        }, timeout=10)
+        ex_data = ex.json()
+        if "access_token" in ex_data:
+            long_token = ex_data["access_token"]
+            expires_in = ex_data.get("expires_in", "unknown")
+            log.info(f"Token exchanged for long-lived, expires_in={expires_in}s")
+            log.info(f"LONG_LIVED_TOKEN={long_token}")
+        else:
+            log.warning(f"Token exchange failed: {ex_data}")
+
     url = f"https://graph.facebook.com/{api_ver}/{ig_user}/subscribed_apps"
     r = requests.post(url, params={
         "subscribed_fields": "comments",
-        "access_token": token,
+        "access_token": long_token,
     }, timeout=10)
 
     data = r.json()
     log.info(f"subscribed_apps response [{r.status_code}]: {data}")
-    return jsonify({"status": r.status_code, "response": data})
+    return jsonify({
+        "subscribed": data,
+        "long_lived_token": long_token if app_secret else "APP_SECRET not set — token not exchanged",
+        "note": "Copy long_lived_token to Railway META_ACCESS_TOKEN — valid 60 days"
+    })
 
 
 @app.route("/status")
