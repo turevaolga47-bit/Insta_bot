@@ -69,7 +69,7 @@ def _handle_comment(value: dict):
 @app.route("/setup")
 def setup_subscription():
     """Обменивает токен на долгосрочный (60 дней) и подписывает аккаунт на webhook events."""
-    token      = os.environ.get("META_ACCESS_TOKEN", "")
+    token      = request.args.get("token") or os.environ.get("META_ACCESS_TOKEN", "")
     ig_user    = os.environ.get("IG_USER_ID", "")
     app_id     = os.environ.get("APP_ID", "960470996353710")
     app_secret = os.environ.get("APP_SECRET", "")
